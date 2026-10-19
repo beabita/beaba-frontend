@@ -3,6 +3,7 @@ import api from '../api';
 import { useCampaign } from '../context/CampaignContext';
 import usePolling from '../hooks/usePolling';
 import CampaignBanner from '../components/CampaignBanner';
+import SensorHealthBanner from '../components/SensorHealthBanner';
 import DashboardCharts from '../components/DashboardCharts';
 import KpiCard from '../components/KpiCard';
 import ApplianceList from '../components/ApplianceList';
@@ -255,6 +256,8 @@ export default function Dashboard({ onRequestEndMeters, onRequestConfig }) {
           )}
         </div>
       </header>
+
+      <SensorHealthBanner onRequestConfig={onRequestConfig} />
 
       {/* ── Date / periode navigator ──────────────────── */}
       <DateNav view={view} onChange={setView} />

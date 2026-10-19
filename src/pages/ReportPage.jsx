@@ -68,7 +68,7 @@ export default function ReportPage() {
     return <div className="rp-web"><div className="rp-error">{error || 'Rapport indisponible'}</div></div>;
   }
 
-  const { energy, top_consumers, standby, comfort, recommendations, meters } = report;
+  const { energy, top_consumers, standby, comfort, air_quality, recommendations, meters } = report;
   const cam = report.campaign;
 
   return (
@@ -108,7 +108,7 @@ export default function ReportPage() {
           <ElectricityTab energy={energy} top_consumers={top_consumers} standby={standby} />
         )}
         {tab === 'comfort' && (
-          <ComfortTab comfort={comfort} />
+          <ComfortTab comfort={comfort} airQuality={air_quality} />
         )}
         {tab === 'recommendations' && (
           <RecommendationsTab recommendations={recommendations} />
@@ -355,12 +355,18 @@ function ElectricityTab({ energy, top_consumers, standby }) {
   );
 }
 
-function ComfortTab({ comfort }) {
-  if (!comfort?.length) {
-    return <div className="rp-tab-content"><div className="rp-empty">Pas de donnees de confort.</div></div>;
+function ComfortTab({ comfort, airQuality }) {
+  if (!comfort?.length && !airQuality?.rooms?.length) {
+    return (
+      <div className="rp-tab-content">
+        <div className="rp-empty">Pas de donnees de confort.</div>
+        <AirQualitySection airQuality={airQuality} />
+      </div>
+    );
   }
   return (
     <div className="rp-tab-content">
+      <AirQualitySection airQuality={airQuality} />
       <div className="rp-comfort-grid">
         {comfort.map(room => (
           <div
@@ -411,6 +417,75 @@ function ComfortTab({ comfort }) {
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+function co2StatusLabel(s) {
+  return { good: 'Air sain', warning: 'Moyen', bad: 'A ameliorer' }[s] || s;
+}
+
+/* Qualite d'air par capteur CO2. `missing` = aucune mesure sur la campagne :
+   on l'affiche explicitement plutot que de laisser la section disparaitre. */
+function AirQualitySection({ airQuality }) {
+  if (!airQuality) return null;
+  if (airQuality.missing) {
+    return (
+      <div className="rp-card rp-air-missing">
+        <h3>Qualite de l'air (CO2)</h3>
+        <p>
+          Aucune mesure de CO2 n'a ete enregistree pendant cette campagne
+          {airQuality.silent_sensors?.length > 0
+            ? ` (capteur declare mais muet : ${airQuality.silent_sensors.join(', ')}).`
+            : ' (aucun capteur CO2 declare).'}
+        </p>
+      </div>
+    );
+  }
+  return (
+    <div className="rp-comfort-grid rp-air-grid">
+      {airQuality.rooms.map(r => (
+        <div
+          key={r.sensor_id}
+          className={`rp-card rp-comfort-card rp-status-${r.status}`}
+          style={{ '--room-color': r.color || '#a78bfa' }}
+        >
+          <div className="rp-comfort-head">
+            <div>
+              <h3>CO2 — {r.room_name}</h3>
+              <div className="rp-comfort-status" data-status={r.status}>{co2StatusLabel(r.status)}</div>
+            </div>
+            <div className="rp-comfort-dot" />
+          </div>
+          <div className="rp-comfort-metrics">
+            <div className="rp-comfort-metric">
+              <div className="rp-comfort-val">{r.avg_co2}</div>
+              <div className="rp-comfort-lbl">ppm moy.</div>
+            </div>
+            <div className="rp-comfort-metric">
+              <div className="rp-comfort-val">{r.max_co2}</div>
+              <div className="rp-comfort-lbl">ppm max</div>
+            </div>
+          </div>
+          <div className="rp-comfort-pct">
+            {r.pct_over_800}% du temps au-dessus de 800 ppm, {r.pct_over_1200}% au-dessus de 1200 ppm
+          </div>
+          {r.daily_co2_series?.length > 1 && (
+            <div style={{ height: 140, marginTop: 8 }}>
+              <ResponsiveContainer>
+                <LineChart data={r.daily_co2_series} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
+                  <CartesianGrid stroke="#2a2a3a" strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="date" tick={{ fill: '#888', fontSize: 10 }} tickFormatter={d => d.slice(5)} />
+                  <YAxis tick={{ fill: '#888', fontSize: 10 }} />
+                  <Tooltip contentStyle={darkTooltip} formatter={(v, k) => [`${v} ppm`, k === 'max_co2' ? 'Max' : 'Moy.']} />
+                  <Line dataKey="avg_co2" stroke={r.color || '#a78bfa'} strokeWidth={2.5} dot={false} />
+                  <Line dataKey="max_co2" stroke={r.color || '#a78bfa'} strokeWidth={1} strokeDasharray="4 3" dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </div>
+      ))}
     </div>
   );
 }

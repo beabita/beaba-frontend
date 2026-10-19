@@ -632,3 +632,22 @@
   border-top: 1px solid rgba(255, 255, 255, 0.06);
   flex-wrap: wrap;
 }
+
+/* ── Qualite d'air (CO2) ─────────────────────────── */
+.rp-air-grid {
+  margin-bottom: 20px;
+}
+
+.rp-air-missing {
+  margin-bottom: 20px;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.rp-air-missing h3 {
+  margin: 0 0 6px;
+}
+
+.rp-air-missing p {
+  margin: 0;
+  color: #fca5a5;
+}

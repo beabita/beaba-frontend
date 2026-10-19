@@ -367,6 +367,7 @@ function StepCo2Sensors({ onNext, onBack }) {
   const [comments, setComments] = useState({});
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [noCo2Confirmed, setNoCo2Confirmed] = useState(false);
 
   const fetchAll = useCallback(async () => {
     try {
@@ -425,7 +426,7 @@ function StepCo2Sensors({ onNext, onBack }) {
     <div className="step-panel">
       <h2>Capteurs CO2</h2>
       <p className="step-desc">
-        Associez chaque capteur CO2 a une piece. Cette etape est facultative — passez a la suivante si vous n'avez pas de capteur CO2.
+        Associez chaque capteur CO2 a une piece. Sans capteur assigne ici, aucune mesure de CO2 ne sera enregistree pendant la campagne.
       </p>
 
       <button
@@ -490,13 +491,36 @@ function StepCo2Sensors({ onNext, onBack }) {
         </div>
       )}
 
-      {unassigned.length === 0 && zigbeeDevices.length === 0 && (
-        <p className="empty-hint">Aucun capteur CO2 detecte. Vous pouvez passer cette etape.</p>
+      {assigned.length === 0 && (
+        <div className="co2-guard">
+          <strong>Aucun capteur CO2 assigne.</strong>
+          {zigbeeDevices.length === 0 && (
+            <p>
+              Aucun capteur CO2 n'est appaire au reseau Zigbee. Si le kit en contient un : autorisez
+              l'appairage dans zigbee2mqtt, maintenez le bouton du capteur 5 secondes, puis cliquez
+              sur « Rechercher les appareils ».
+            </p>
+          )}
+          <label className="co2-guard-check">
+            <input
+              type="checkbox"
+              checked={noCo2Confirmed}
+              onChange={(e) => setNoCo2Confirmed(e.target.checked)}
+            />
+            Ce kit n'a pas de capteur CO2 — continuer sans
+          </label>
+        </div>
       )}
 
       <div className="step-nav">
         <button className="btn-back" onClick={onBack}>Retour</button>
-        <button className="btn-primary" onClick={onNext}>Suivant</button>
+        <button
+          className="btn-primary"
+          onClick={onNext}
+          disabled={assigned.length === 0 && !noCo2Confirmed}
+        >
+          Suivant
+        </button>
       </div>
     </div>
   );
@@ -674,6 +698,7 @@ function StepSummary({ campaignId, refreshCampaign, onBack, editMode = false, on
   const [plugs, setPlugs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activating, setActivating] = useState(false);
+  const [noCo2Confirmed, setNoCo2Confirmed] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -703,6 +728,9 @@ function StepSummary({ campaignId, refreshCampaign, onBack, editMode = false, on
   };
 
   if (loading) return <div className="setup-loading">Chargement...</div>;
+
+  const co2WithoutRoom = co2Sensors.filter((s) => !rooms.some((r) => r.id === s.room_id));
+  const co2Blocked = !editMode && co2Sensors.length === 0 && !noCo2Confirmed;
 
   return (
     <div className="step-panel">
@@ -764,6 +792,30 @@ function StepSummary({ campaignId, refreshCampaign, onBack, editMode = false, on
         })}
       </div>
 
+      {co2Sensors.length === 0 && (
+        <div className="co2-guard">
+          <strong>Aucun capteur CO2 dans cette campagne.</strong>
+          <p>Le rapport final ne contiendra aucune donnee de qualite d'air.</p>
+          {!editMode && (
+            <label className="co2-guard-check">
+              <input
+                type="checkbox"
+                checked={noCo2Confirmed}
+                onChange={(e) => setNoCo2Confirmed(e.target.checked)}
+              />
+              Je confirme demarrer sans capteur CO2
+            </label>
+          )}
+        </div>
+      )}
+
+      {co2WithoutRoom.length > 0 && (
+        <div className="co2-guard co2-guard-warning">
+          <strong>Capteur CO2 sans piece :</strong> {co2WithoutRoom.map((s) => s.name).join(', ')}.
+          Les mesures seront enregistrees mais pas rattachees a une piece.
+        </div>
+      )}
+
       <div className="step-nav">
         <button className="btn-back" onClick={onBack}>Retour</button>
         {editMode ? (
@@ -771,7 +823,7 @@ function StepSummary({ campaignId, refreshCampaign, onBack, editMode = false, on
             Retour au tableau de bord
           </button>
         ) : (
-          <button className="btn-primary btn-activate" onClick={activate} disabled={activating}>
+          <button className="btn-primary btn-activate" onClick={activate} disabled={activating || co2Blocked}>
             {activating ? 'Activation...' : "Demarrer l'enregistrement"}
           </button>
         )}

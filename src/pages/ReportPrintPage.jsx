@@ -32,7 +32,9 @@ export default function ReportPrintPage() {
   if (loading) return <div className="pr-loading">Preparation du rapport...</div>;
   if (error || !report) return <div className="pr-loading">{error || 'Rapport indisponible'}</div>;
 
-  const { energy, top_consumers, standby, comfort, recommendations, meters } = report;
+  const { energy, top_consumers, standby, comfort, air_quality, recommendations, meters } = report;
+  const airPage = comfort.length > 0 ? 5 : 4;
+  const lastPage = airPage + (air_quality ? 1 : 0);
   const cam = report.campaign;
   const today = formatDate(new Date().toISOString());
   const standbyTotal = standby.reduce((s, r) => s + r.estimated_annual_cost, 0);
@@ -319,9 +321,73 @@ export default function ReportPrintPage() {
         </section>
       )}
 
-      {/* ── Page 5 — Recommandations + pieds de page ── */}
+      {/* ── Qualite de l'air (CO2) ── */}
+      {air_quality && (
+        <section className="pr-page">
+          <PrintHeader household={cam.household} pageNum={airPage} />
+          <h2 className="pr-h1">Qualite de l'air (CO2)</h2>
+          {air_quality.missing ? (
+            <p className="pr-note">
+              Aucune mesure de CO2 n'a ete enregistree pendant cette campagne.
+            </p>
+          ) : (
+            <>
+              <p className="pr-note">
+                Repere : moins de 800 ppm = air sain, 800-1200 ppm = aeration insuffisante, au-dela de 1200 ppm = air confine.
+              </p>
+              <table className="pr-table">
+                <thead>
+                  <tr>
+                    <th>Piece</th>
+                    <th className="ar">CO2 moy.</th>
+                    <th className="ar">CO2 max</th>
+                    <th className="ar">% &gt; 800 ppm</th>
+                    <th className="ar">% &gt; 1200 ppm</th>
+                    <th>Evaluation</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {air_quality.rooms.map(r => (
+                    <tr key={r.sensor_id}>
+                      <td>{r.room_name}</td>
+                      <td className="ar">{r.avg_co2} ppm</td>
+                      <td className="ar">{r.max_co2} ppm</td>
+                      <td className="ar">{r.pct_over_800}%</td>
+                      <td className="ar">{r.pct_over_1200}%</td>
+                      <td>{{ good: 'Air sain', warning: 'Moyen', bad: 'A ameliorer' }[r.status]}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              <h3 className="pr-h2">Evolution du CO2 par piece</h3>
+              <div className="pr-comfort-charts">
+                {air_quality.rooms.filter(r => r.daily_co2_series?.length > 1).map(r => (
+                  <div className="pr-comfort-chart" key={r.sensor_id}>
+                    <div className="pr-comfort-chart-title">{r.room_name}</div>
+                    <div style={{ height: 90 }}>
+                      <ResponsiveContainer>
+                        <LineChart data={r.daily_co2_series} margin={{ top: 4, right: 4, bottom: 0, left: -16 }}>
+                          <CartesianGrid stroke="#e5e5e5" strokeDasharray="2 2" vertical={false} />
+                          <XAxis dataKey="date" tick={{ fill: '#555', fontSize: 8 }} tickFormatter={d => d.slice(5)} stroke="#bbb" />
+                          <YAxis tick={{ fill: '#555', fontSize: 8 }} stroke="#bbb" />
+                          <Line dataKey="avg_co2" stroke="#000" strokeWidth={1.2} dot={false} />
+                          <Line dataKey="max_co2" stroke="#888" strokeWidth={0.8} strokeDasharray="3 2" dot={false} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+          <PrintFooter today={today} />
+        </section>
+      )}
+
+      {/* ── Derniere page — Recommandations + pieds de page ── */}
       <section className="pr-page pr-last-page">
-        <PrintHeader household={cam.household} pageNum={comfort.length > 0 ? 5 : 4} />
+        <PrintHeader household={cam.household} pageNum={lastPage} />
 
         <h2 className="pr-h1">Recommandations</h2>
         {recommendations.length === 0 ? (

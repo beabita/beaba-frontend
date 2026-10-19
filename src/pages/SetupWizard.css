@@ -411,6 +411,43 @@
   color: #e0e0e0;
 }
 
+/* ── Garde capteur CO2 ──────────────────────────── */
+.co2-guard {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-top: 16px;
+  color: #cbd5e1;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.co2-guard strong {
+  color: #fca5a5;
+}
+
+.co2-guard p {
+  margin: 6px 0 0;
+}
+
+.co2-guard-warning {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.4);
+}
+
+.co2-guard-warning strong {
+  color: #fcd34d;
+}
+
+.co2-guard-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  cursor: pointer;
+}
+
 /* ── Misc ───────────────────────────────────────── */
 .empty-hint {
   color: #666;
