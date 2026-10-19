@@ -28,6 +28,28 @@ function timeAgo(iso) {
   return `il y a ${Math.round(h / 24)} j`;
 }
 
+const PAIR_SECONDS = 254;
+
+// A transmettre a la personne sur place (SMS, telephone...)
+const ONSITE_STEPS = [
+  "Approchez l'appareil a moins de 2 metres du boitier Beaba.",
+  "Maintenez son bouton enfonce environ 5 secondes, jusqu'a ce que le voyant clignote.",
+  "Relachez et attendez une minute sans rien debrancher.",
+];
+
+const EVENT_LABEL = {
+  device_joined: 'a rejoint le reseau',
+  device_announce: "s'est annonce",
+  started: 'identification en cours...',
+  successful: 'identifie avec succes',
+  failed: "echec de l'identification : recommencer l'appui",
+};
+
+function formatMS(seconds) {
+  const s = Math.max(0, Math.round(seconds));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}
+
 function signalLevel(lqi) {
   if (lqi == null) return null;
   if (lqi >= 100) return 'good';
@@ -36,11 +58,56 @@ function signalLevel(lqi) {
 }
 
 export default function ZigbeeNetworkModal({ onClose }) {
+  const [pairingOpen, setPairingOpen] = useState(false);
+  // Pendant l'appairage on suit les evenements de pres
   const { data, error, loading, refresh } = usePolling(
     useCallback(() => api.get('/api/zigbee/overview'), []),
-    30 * 1000
+    pairingOpen ? 3000 : 30 * 1000
   );
   const [refreshing, setRefreshing] = useState(false);
+  const [pairBusy, setPairBusy] = useState(false);
+  const [pairError, setPairError] = useState(null);
+  const [copied, setCopied] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
+
+  const bridge = data?.bridge;
+  const pairEnd = bridge?.permit_join && bridge.permit_join_end ? new Date(bridge.permit_join_end).getTime() : null;
+  const remaining = pairEnd ? (pairEnd - now) / 1000 : 0;
+  const isPairing = remaining > 0;
+
+  useEffect(() => { setPairingOpen(isPairing); }, [isPairing]);
+
+  useEffect(() => {
+    if (!pairEnd) return undefined;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [pairEnd]);
+
+  // Le backend vide la liste a chaque ouverture de l'appairage
+  const pairEvents = bridge?.events || [];
+
+  const setPairing = async (seconds) => {
+    setPairBusy(true);
+    setPairError(null);
+    try {
+      await api.post('/api/zigbee/permit-join', { seconds });
+      setNow(Date.now());
+      refresh();
+    } catch (err) {
+      setPairError(err.response?.data?.error || "Impossible de joindre le boitier.");
+    } finally {
+      setPairBusy(false);
+    }
+  };
+
+  const copySteps = async () => {
+    const text = `Pour connecter l'appareil au kit Beaba :\n${ONSITE_STEPS.map((t, i) => `${i + 1}. ${t}`).join('\n')}`;
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch { /* presse-papier indisponible */ }
+  };
 
   useEffect(() => {
     const onKey = (e) => { if (e.key === 'Escape') onClose?.(); };
@@ -80,6 +147,64 @@ export default function ZigbeeNetworkModal({ onClose }) {
           <button type="button" className="zbn-refresh" onClick={handleRefresh} disabled={refreshing}>
             {refreshing ? 'Actualisation...' : 'Rafraichir'}
           </button>
+        </div>
+
+        <div className={`zbn-pair ${isPairing ? 'zbn-pair-on' : ''}`}>
+          {!isPairing ? (
+            <div className="zbn-pair-row">
+              <div>
+                <div className="zbn-pair-title">Ajouter un appareil a distance</div>
+                <div className="zbn-pair-text">
+                  Ouvre l'appairage pendant {Math.round(PAIR_SECONDS / 60)} min. Une personne sur place appuie
+                  alors sur le bouton de l'appareil, et vous suivez le resultat ici.
+                </div>
+              </div>
+              <button type="button" className="zbn-pair-btn" onClick={() => setPairing(PAIR_SECONDS)} disabled={pairBusy || !data}>
+                {pairBusy ? 'Ouverture...' : "Autoriser l'appairage"}
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="zbn-pair-row">
+                <div>
+                  <div className="zbn-pair-title">
+                    Appairage ouvert <span className="zbn-pair-timer">{formatMS(remaining)}</span>
+                  </div>
+                  <div className="zbn-pair-text">A faire par la personne sur place :</div>
+                </div>
+                <div className="zbn-pair-actions">
+                  <button type="button" className="zbn-refresh" onClick={copySteps}>
+                    {copied ? 'Copie !' : 'Copier les consignes'}
+                  </button>
+                  <button type="button" className="zbn-refresh" onClick={() => setPairing(0)} disabled={pairBusy}>
+                    Arreter
+                  </button>
+                </div>
+              </div>
+              <ol className="zbn-pair-steps">
+                {ONSITE_STEPS.map((t) => <li key={t}>{t}</li>)}
+              </ol>
+            </>
+          )}
+
+          {pairEvents.length > 0 && (
+            <ul className="zbn-pair-events">
+              {pairEvents.map((e) => (
+                <li key={`${e.ts}_${e.type}_${e.status}_${e.ieee_address}`} className={`zbn-ev-${e.status || e.type}`}>
+                  <span className="zbn-meta">{new Date(e.ts).toLocaleTimeString('fr-BE')}</span>{' '}
+                  <strong>{[e.vendor, e.model].filter(Boolean).join(' ') || e.friendly_name || e.ieee_address}</strong>{' '}
+                  {EVENT_LABEL[e.status] || EVENT_LABEL[e.type] || e.type}
+                </li>
+              ))}
+            </ul>
+          )}
+          {pairEvents.some((e) => e.status === 'successful') && (
+            <div className="zbn-pair-text zbn-pair-next">
+              L'appareil apparait ci-dessous en « Non declare ». Declarez-le ensuite dans la campagne
+              (Ajouter des appareils, ou l'assistant de setup) pour que ses mesures soient conservees.
+            </div>
+          )}
+          {pairError && <div className="zbn-pair-text zbn-error">{pairError}</div>}
         </div>
 
         {data && (
