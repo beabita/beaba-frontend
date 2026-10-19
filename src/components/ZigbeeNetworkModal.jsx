@@ -94,7 +94,13 @@ export default function ZigbeeNetworkModal({ onClose }) {
       setNow(Date.now());
       refresh();
     } catch (err) {
-      setPairError(err.response?.data?.error || "Impossible de joindre le boitier.");
+      const status = err.response?.status;
+      setPairError(
+        err.response?.data?.error
+        || (status === 404 ? "Le boitier n'a pas encore la mise a jour permettant l'appairage a distance."
+          : status ? `Erreur du boitier (HTTP ${status}).`
+          : 'Impossible de joindre le boitier.')
+      );
     } finally {
       setPairBusy(false);
     }
