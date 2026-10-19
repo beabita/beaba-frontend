@@ -115,6 +115,13 @@
 }
 .db-action-boiler:hover { box-shadow: 0 8px 24px -8px rgba(239, 68, 68, 0.4); }
 
+.db-action-zigbee {
+  border-color: rgba(56, 189, 248, 0.45);
+  color: #7dd3fc;
+  --glow: rgba(56, 189, 248, 0.45);
+}
+.db-action-zigbee:hover { box-shadow: 0 8px 24px -8px rgba(56, 189, 248, 0.4); }
+
 .db-action-icon { font-size: 1.05rem; line-height: 1; }
 
 /* ── KPI row ─────────────────────────────────────────────── */

@@ -44,6 +44,10 @@
   cursor: pointer;
 }
 
+.sensor-health-btn + .sensor-health-btn {
+  margin-left: 8px;
+}
+
 .sensor-health-btn:hover {
   background: rgba(255, 255, 255, 0.06);
 }

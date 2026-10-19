@@ -28,6 +28,18 @@
   color: #f59e0b;
 }
 
+.setup-network-btn {
+  margin-top: 10px;
+  padding: 6px 14px;
+  background: rgba(56, 189, 248, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  border-radius: 999px;
+  color: #7dd3fc;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.setup-network-btn:hover { background: rgba(56, 189, 248, 0.15); }
+
 .setup-content {
   padding: 0 4px;
 }

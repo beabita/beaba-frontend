@@ -4,6 +4,7 @@ import { useCampaign } from '../context/CampaignContext';
 import StepIndicator from '../components/StepIndicator';
 import ColorPicker from '../components/ColorPicker';
 import MeterReadingsPage from './MeterReadingsPage';
+import ZigbeeNetworkModal from '../components/ZigbeeNetworkModal';
 import './SetupWizard.css';
 
 export default function SetupWizard({ editMode = false, onExit }) {
@@ -11,6 +12,7 @@ export default function SetupWizard({ editMode = false, onExit }) {
   // En mode edition (campagne deja active), on saute la preparation et les
   // releves de compteurs : on demarre directement sur les pieces.
   const [step, setStep] = useState(editMode ? 3 : 1);
+  const [showZigbee, setShowZigbee] = useState(false);
 
   return (
     <div className="setup-wizard">
@@ -22,6 +24,9 @@ export default function SetupWizard({ editMode = false, onExit }) {
             Ajout / modification des appareils — l'enregistrement continue en arriere-plan.
           </p>
         )}
+        <button type="button" className="setup-network-btn" onClick={() => setShowZigbee(true)}>
+          📡 Voir le reseau Zigbee
+        </button>
       </div>
       <StepIndicator current={step} editMode={editMode} />
       <div className="setup-content">
@@ -55,6 +60,7 @@ export default function SetupWizard({ editMode = false, onExit }) {
           />
         )}
       </div>
+      {showZigbee && <ZigbeeNetworkModal onClose={() => setShowZigbee(false)} />}
     </div>
   );
 }

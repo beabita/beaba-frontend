@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../api';
+import ZigbeeNetworkModal from '../components/ZigbeeNetworkModal';
 import './AdminPage.css';
 
 export default function AdminPage() {
@@ -11,6 +12,7 @@ export default function AdminPage() {
   const [formEmail, setFormEmail] = useState('');
   const [formError, setFormError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [showZigbee, setShowZigbee] = useState(false);
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -63,6 +65,9 @@ export default function AdminPage() {
         <h1 className="admin-title">Gestion des conseillers</h1>
         <div className="admin-actions">
           <Link to="/app" className="admin-back-link">Retour</Link>
+          <button className="admin-network-btn" onClick={() => setShowZigbee(true)}>
+            Reseau Zigbee
+          </button>
           <button
             className="admin-add-btn"
             onClick={() => setShowForm(!showForm)}
@@ -143,6 +148,7 @@ export default function AdminPage() {
           </tbody>
         </table>
       </div>
+      {showZigbee && <ZigbeeNetworkModal onClose={() => setShowZigbee(false)} />}
     </div>
   );
 }

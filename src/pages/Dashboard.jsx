@@ -10,6 +10,7 @@ import ApplianceList from '../components/ApplianceList';
 import SensorList from '../components/SensorList';
 import RoomCard from '../components/RoomCard';
 import CartoView from '../components/CartoView';
+import ZigbeeNetworkModal from '../components/ZigbeeNetworkModal';
 import ComfortPage from './ComfortPage';
 import ChaudierePage from './ChaudierePage';
 import DateNav, { viewWindow, isLiveView } from '../components/DateNav';
@@ -55,6 +56,7 @@ export default function Dashboard({ onRequestEndMeters, onRequestConfig }) {
   const { campaign } = useCampaign();
   const [showCarto, setShowCarto] = useState(false);
   const [showComfort, setShowComfort] = useState(false);
+  const [showZigbee, setShowZigbee] = useState(false);
   const [showChaudiere, setShowChaudiere] = useState(false);
 
   /* ── Vue temporelle (date + periode) ─────────────────── */
@@ -243,6 +245,15 @@ export default function Dashboard({ onRequestEndMeters, onRequestConfig }) {
             <span className="db-action-icon">🔥</span>
             <span className="db-action-label">Chaudiere &amp; ECS</span>
           </button>
+          <button
+            type="button"
+            className="db-action-btn db-action-zigbee"
+            onClick={() => setShowZigbee(true)}
+            aria-label="Etat du reseau Zigbee"
+          >
+            <span className="db-action-icon">📡</span>
+            <span className="db-action-label">Reseau Zigbee</span>
+          </button>
           {onRequestConfig && (
             <button
               type="button"
@@ -257,7 +268,7 @@ export default function Dashboard({ onRequestEndMeters, onRequestConfig }) {
         </div>
       </header>
 
-      <SensorHealthBanner onRequestConfig={onRequestConfig} />
+      <SensorHealthBanner onRequestConfig={onRequestConfig} onShowNetwork={() => setShowZigbee(true)} />
 
       {/* ── Date / periode navigator ──────────────────── */}
       <DateNav view={view} onChange={setView} />
@@ -397,6 +408,7 @@ export default function Dashboard({ onRequestEndMeters, onRequestConfig }) {
       {/* ── Fullscreen overlays ──────────────────────── */}
       {showCarto && <CartoView onClose={() => setShowCarto(false)} />}
       {showComfort && <ComfortPage onClose={() => setShowComfort(false)} />}
+      {showZigbee && <ZigbeeNetworkModal onClose={() => setShowZigbee(false)} />}
       {showChaudiere && <ChaudierePage onClose={() => setShowChaudiere(false)} />}
     </div>
   );

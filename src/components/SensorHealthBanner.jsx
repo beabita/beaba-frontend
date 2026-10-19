@@ -6,7 +6,7 @@ import './SensorHealthBanner.css';
 /* Alerte capteurs pendant la campagne : capteur CO2 absent, desappaire,
    muet ou sans piece. Sans elle, une campagne peut se terminer sans CO2
    sans que personne ne s'en rende compte. */
-export default function SensorHealthBanner({ onRequestConfig }) {
+export default function SensorHealthBanner({ onRequestConfig, onShowNetwork }) {
   const { data } = usePolling(
     useCallback(() => api.get('/api/sensors/health'), []),
     5 * 60 * 1000
@@ -25,6 +25,11 @@ export default function SensorHealthBanner({ onRequestConfig }) {
           <li key={`${i.code}_${i.sensor || ''}`}>{i.message}</li>
         ))}
       </ul>
+      {onShowNetwork && (
+        <button type="button" className="sensor-health-btn" onClick={onShowNetwork}>
+          Voir le reseau Zigbee
+        </button>
+      )}
       {onRequestConfig && (
         <button type="button" className="sensor-health-btn" onClick={onRequestConfig}>
           Ouvrir la configuration

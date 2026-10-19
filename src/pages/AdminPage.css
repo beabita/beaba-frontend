@@ -36,6 +36,21 @@
   color: #f5a623;
 }
 
+.admin-network-btn {
+  padding: 10px 16px;
+  background: transparent;
+  color: #7dd3fc;
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.admin-network-btn:hover {
+  background: rgba(56, 189, 248, 0.1);
+}
+
 .admin-add-btn {
   padding: 10px 20px;
   background: #f5a623;
