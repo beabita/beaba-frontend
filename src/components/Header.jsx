@@ -1,12 +1,17 @@
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCampaign } from '../context/CampaignContext';
+import ZigbeeNetworkModal from './ZigbeeNetworkModal';
 import './Header.css';
 
 export default function Header() {
   const { user, logout } = useAuth();
   const { campaign } = useCampaign();
   const navigate = useNavigate();
+  const [showZigbee, setShowZigbee] = useState(false);
+  // Acces a l'appairage depuis tous les ecrans, y compris l'assistant de setup
+  const canPair = user?.role === 'admin' || !!user?.can_pair;
 
   const statusLabels = {
     setup: 'Configuration',
@@ -38,6 +43,11 @@ export default function Header() {
         {user && (
           <>
             <span className="header-username">{user.name}</span>
+            {canPair && (
+              <button type="button" className="header-zigbee-btn" onClick={() => setShowZigbee(true)}>
+                Zigbee
+              </button>
+            )}
             {user.role === 'admin' && (
               <Link to="/app/admin" className="header-admin-link">Admin</Link>
             )}
@@ -47,6 +57,7 @@ export default function Header() {
           </>
         )}
       </div>
+      {showZigbee && <ZigbeeNetworkModal onClose={() => setShowZigbee(false)} />}
     </header>
   );
 }
