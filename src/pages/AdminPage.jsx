@@ -55,6 +55,15 @@ export default function AdminPage() {
     }
   };
 
+  const togglePairing = async (user) => {
+    try {
+      await api.put(`/api/users/${user.id}`, { can_pair: !user.can_pair });
+      await fetchUsers();
+    } catch {
+      // ignore
+    }
+  };
+
   if (loading) {
     return <div className="loading">Chargement...</div>;
   }
@@ -111,6 +120,7 @@ export default function AdminPage() {
               <th>Nom</th>
               <th>Email</th>
               <th>Rôle</th>
+              <th title="Peut ouvrir l'appairage pour installer des accessoires">Zigbee</th>
               <th>Statut</th>
               <th>Actions</th>
             </tr>
@@ -124,6 +134,20 @@ export default function AdminPage() {
                   <span className={`admin-role admin-role-${u.role}`}>
                     {u.role === 'admin' ? 'Admin' : 'Conseiller'}
                   </span>
+                </td>
+                <td>
+                  {u.role === 'admin' ? (
+                    <span className="admin-pair admin-pair-on">Installateur</span>
+                  ) : (
+                    <label className="admin-pair-toggle">
+                      <input
+                        type="checkbox"
+                        checked={!!u.can_pair}
+                        onChange={() => togglePairing(u)}
+                      />
+                      Installateur
+                    </label>
+                  )}
                 </td>
                 <td>
                   <span className={`admin-badge ${u.active !== false ? 'admin-badge-active' : 'admin-badge-inactive'}`}>
@@ -142,7 +166,7 @@ export default function AdminPage() {
             ))}
             {users.length === 0 && (
               <tr>
-                <td colSpan="5" className="admin-empty">Aucun utilisateur</td>
+                <td colSpan="6" className="admin-empty">Aucun utilisateur</td>
               </tr>
             )}
           </tbody>

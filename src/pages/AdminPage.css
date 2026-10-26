@@ -177,6 +177,31 @@
   background: rgba(100, 181, 246, 0.15);
 }
 
+.admin-pair {
+  font-size: 0.8rem;
+  padding: 3px 10px;
+  border-radius: 12px;
+}
+
+.admin-pair-on {
+  color: #7dd3fc;
+  background: rgba(56, 189, 248, 0.15);
+}
+
+.admin-pair-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: #a0a0b0;
+  cursor: pointer;
+}
+
+.admin-pair-toggle input {
+  accent-color: #38bdf8;
+  cursor: pointer;
+}
+
 .admin-badge {
   font-size: 0.8rem;
   padding: 3px 10px;

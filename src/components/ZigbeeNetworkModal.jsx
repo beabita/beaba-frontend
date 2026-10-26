@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import api from '../api';
+import { useAuth } from '../context/AuthContext';
 import usePolling from '../hooks/usePolling';
 import './ZigbeeNetworkModal.css';
 
@@ -58,6 +59,9 @@ function signalLevel(lqi) {
 }
 
 export default function ZigbeeNetworkModal({ onClose }) {
+  const { user } = useAuth();
+  // L'appairage est reserve aux admins et aux conseillers installateurs
+  const canPair = user?.role === 'admin' || !!user?.can_pair;
   const [pairingOpen, setPairingOpen] = useState(false);
   // Pendant l'appairage on suit les evenements de pres
   const { data, error, loading, refresh } = usePolling(
@@ -155,7 +159,7 @@ export default function ZigbeeNetworkModal({ onClose }) {
           </button>
         </div>
 
-        <div className={`zbn-pair ${isPairing ? 'zbn-pair-on' : ''}`}>
+        {canPair && <div className={`zbn-pair ${isPairing ? 'zbn-pair-on' : ''}`}>
           {!isPairing ? (
             <div className="zbn-pair-row">
               <div>
@@ -211,7 +215,7 @@ export default function ZigbeeNetworkModal({ onClose }) {
             </div>
           )}
           {pairError && <div className="zbn-pair-text zbn-error">{pairError}</div>}
-        </div>
+        </div>}
 
         {data && (
           <div className="zbn-counts">
