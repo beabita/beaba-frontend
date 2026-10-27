@@ -30,6 +30,7 @@ export default function ReportPage() {
     () => !!campaign?.archived_at && campaign.archived_at >= (campaign.completed_at || '')
   );
   const [downloading, setDownloading] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(0);
   const [downloadError, setDownloadError] = useState(null);
 
   useEffect(() => {
@@ -44,9 +45,20 @@ export default function ReportPage() {
   const handleExportCsv = async () => {
     if (!campaign?.id || downloading) return;
     setDownloading(true);
+    setDownloadProgress(0);
     setDownloadError(null);
     try {
-      const res = await api.get(`/api/export/${campaign.id}/csv`, { responseType: 'blob' });
+      const res = await api.get(`/api/export/${campaign.id}/csv`, {
+        responseType: 'blob',
+        // ZIP streame : le serveur donne une taille estimee, on plafonne a
+        // 95 % tant que le telechargement n'est pas fini.
+        onDownloadProgress: (e) => {
+          const estimate = Number(e.event?.target?.getResponseHeader?.('X-Archive-Estimate')) || 0;
+          const total = e.total || estimate;
+          if (total) setDownloadProgress(Math.min(95, Math.round((e.loaded / total) * 100)));
+        },
+      });
+      setDownloadProgress(100);
       const match = /filename="([^"]+)"/.exec(res.headers['content-disposition'] || '');
       const url = URL.createObjectURL(res.data);
       const a = document.createElement('a');
@@ -106,11 +118,12 @@ export default function ReportPage() {
           </div>
           <div className="rp-topbar-actions">
             <button className="rp-btn rp-btn-ghost" onClick={handleExportCsv} disabled={downloading}>
-              {downloading ? 'Preparation...' : "Telecharger l'archive"}
+              {downloading ? `Preparation... ${downloadProgress} %` : "Telecharger l'archive"}
             </button>
             <button className="rp-btn rp-btn-primary" onClick={handleOpenPrint}>Telecharger PDF</button>
           </div>
         </div>
+        {downloading && !showNewCampaignModal && <ArchiveProgress value={downloadProgress} thin />}
         <div className="rp-tabs">
           {TABS.map(t => (
             <button
@@ -183,6 +196,7 @@ export default function ReportPage() {
               </button>
             </div>
 
+            {downloading && <ArchiveProgress value={downloadProgress} />}
             {downloadError && <p className="rp-modal-text rp-modal-error">{downloadError}</p>}
 
             <div className="rp-modal-actions">
@@ -540,6 +554,29 @@ function RecommendationsTab({ recommendations }) {
 }
 
 /* ─── Helpers ────────────────────────────────────────────── */
+
+/* Barre de progression du telechargement de l'archive. A 0 % (aucune
+   donnee recue ou taille inconnue) elle defile en mode indetermine. */
+function ArchiveProgress({ value, thin }) {
+  return (
+    <div className={`rp-progress ${thin ? 'rp-progress-thin' : ''}`}>
+      <div
+        className={`rp-progress-track ${value ? '' : 'indeterminate'}`}
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={value || undefined}
+      >
+        <div className="rp-progress-fill" style={value ? { width: `${value}%` } : undefined} />
+      </div>
+      {!thin && (
+        <div className="rp-progress-label">
+          {value ? `Preparation de l'archive... ${value} %` : "Preparation de l'archive..."}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function KPI({ label, value, unit, color }) {
   return (

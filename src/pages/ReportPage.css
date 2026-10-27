@@ -620,6 +620,64 @@
   color: #f87171;
 }
 
+/* ── Progression archive ─────────────────────────────────── */
+
+.rp-progress {
+  margin: -8px 0 20px;
+}
+
+.rp-progress-track {
+  position: relative;
+  height: 8px;
+  border-radius: 999px;
+  background: #2a2a3a;
+  overflow: hidden;
+}
+
+.rp-progress-fill {
+  height: 100%;
+  width: 0;
+  border-radius: inherit;
+  background: #fbbf24;
+  transition: width 0.3s ease;
+}
+
+.rp-progress-track.indeterminate .rp-progress-fill {
+  position: absolute;
+  width: 35%;
+  animation: rp-progress-slide 1.2s ease-in-out infinite;
+}
+
+@keyframes rp-progress-slide {
+  from { left: -35%; }
+  to   { left: 100%; }
+}
+
+.rp-progress-label {
+  margin-top: 8px;
+  color: #aaa;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.rp-progress-thin {
+  margin: 0;
+}
+
+.rp-progress-thin .rp-progress-track {
+  height: 3px;
+  border-radius: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rp-progress-track.indeterminate .rp-progress-fill {
+    animation: none;
+    left: 0;
+    width: 100%;
+    opacity: 0.4;
+  }
+}
+
 .rp-modal-download {
   display: flex;
   gap: 12px;
