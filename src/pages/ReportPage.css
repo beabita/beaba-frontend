@@ -616,6 +616,10 @@
   color: #fff;
 }
 
+.rp-modal-error {
+  color: #f87171;
+}
+
 .rp-modal-download {
   display: flex;
   gap: 12px;

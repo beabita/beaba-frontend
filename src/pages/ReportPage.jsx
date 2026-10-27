@@ -24,7 +24,13 @@ export default function ReportPage() {
   const [tab, setTab] = useState('overview');
   const [showNewCampaignModal, setShowNewCampaignModal] = useState(false);
   const [wiping, setWiping] = useState(false);
-  const [archiveDownloaded, setArchiveDownloaded] = useState(false);
+  // Le serveur note archived_at quand l'archive a ete envoyee en entier ;
+  // sans telechargement posterieur a la cloture, l'effacement est refuse.
+  const [archiveDownloaded, setArchiveDownloaded] = useState(
+    () => !!campaign?.archived_at && campaign.archived_at >= (campaign.completed_at || '')
+  );
+  const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState(null);
 
   useEffect(() => {
     if (!campaign?.id) return;
@@ -35,10 +41,26 @@ export default function ReportPage() {
       .finally(() => setLoading(false));
   }, [campaign?.id]);
 
-  const handleExportCsv = () => {
-    if (!campaign?.id) return;
-    window.open(`${api.defaults.baseURL}/api/export/${campaign.id}/csv`, '_blank');
-    setArchiveDownloaded(true);
+  const handleExportCsv = async () => {
+    if (!campaign?.id || downloading) return;
+    setDownloading(true);
+    setDownloadError(null);
+    try {
+      const res = await api.get(`/api/export/${campaign.id}/csv`, { responseType: 'blob' });
+      const match = /filename="([^"]+)"/.exec(res.headers['content-disposition'] || '');
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = match ? match[1] : 'beaba_archive.zip';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setArchiveDownloaded(true);
+    } catch {
+      setDownloadError("Le telechargement de l'archive a echoue. Reessayez.");
+    }
+    setDownloading(false);
   };
 
   const handleOpenPrint = () => {
@@ -48,7 +70,7 @@ export default function ReportPage() {
   const handleWipeAndNew = async () => {
     setWiping(true);
     try {
-      await api.post('/api/campaign/wipe');
+      await api.delete(`/api/campaign/${campaign.id}`);
       await refreshCampaign();
       navigate('/app');
     } catch (err) {
@@ -83,7 +105,9 @@ export default function ReportPage() {
             </div>
           </div>
           <div className="rp-topbar-actions">
-            <button className="rp-btn rp-btn-ghost" onClick={handleExportCsv}>Telecharger l'archive</button>
+            <button className="rp-btn rp-btn-ghost" onClick={handleExportCsv} disabled={downloading}>
+              {downloading ? 'Preparation...' : "Telecharger l'archive"}
+            </button>
             <button className="rp-btn rp-btn-primary" onClick={handleOpenPrint}>Telecharger PDF</button>
           </div>
         </div>
@@ -144,9 +168,11 @@ export default function ReportPage() {
               <button
                 className={`rp-btn ${archiveDownloaded ? 'rp-btn-ghost' : 'rp-btn-primary'}`}
                 onClick={handleExportCsv}
-                disabled={wiping}
+                disabled={wiping || downloading}
               >
-                {archiveDownloaded ? 'Archive telechargee ✓' : 'Telecharger l\'archive'}
+                {downloading
+                  ? 'Preparation de l\'archive...'
+                  : archiveDownloaded ? 'Archive telechargee ✓' : 'Telecharger l\'archive'}
               </button>
               <button
                 className="rp-btn rp-btn-ghost"
@@ -156,6 +182,8 @@ export default function ReportPage() {
                 Telecharger PDF
               </button>
             </div>
+
+            {downloadError && <p className="rp-modal-text rp-modal-error">{downloadError}</p>}
 
             <div className="rp-modal-actions">
               <button
@@ -168,7 +196,7 @@ export default function ReportPage() {
               <button
                 className="rp-btn rp-btn-danger"
                 onClick={handleWipeAndNew}
-                disabled={wiping || !archiveDownloaded}
+                disabled={wiping || downloading || !archiveDownloaded}
                 title={!archiveDownloaded ? 'Telechargez d\'abord l\'archive' : ''}
               >
                 {wiping ? 'Effacement...' : 'Effacer et demarrer une nouvelle campagne'}
