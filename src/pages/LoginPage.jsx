@@ -1,12 +1,18 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import api from '../api';
 import './LoginPage.css';
 
 export default function LoginPage() {
+  const [searchParams] = useSearchParams();
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
-  const [error, setError] = useState('');
+  // Renvoi de /api/auth/verify : lien perime (15 min) ou deja utilise.
+  const [error, setError] = useState(() =>
+    searchParams.get('error') === 'expired'
+      ? 'Ce lien de connexion a expiré ou a déjà été utilisé. Demandez-en un nouveau.'
+      : ''
+  );
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (e) => {

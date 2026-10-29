@@ -5,6 +5,7 @@ import { CampaignProvider, useCampaign } from './context/CampaignContext';
 import Header from './components/Header';
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
+import VerifyLoginPage from './pages/VerifyLoginPage';
 import AdminPage from './pages/AdminPage';
 import NewCampaignPage from './pages/NewCampaignPage';
 import SetupWizard from './pages/SetupWizard';
@@ -133,6 +134,7 @@ function App() {
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/login/verify" element={<VerifyLoginPage />} />
         <Route
           path="/app/admin"
           element={
